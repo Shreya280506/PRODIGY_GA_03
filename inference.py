@@ -24,20 +24,10 @@ generator.load_state_dict(
 generator.eval()
 
 
-# Select an input image
-input_path = "dataset/100.jpg"
+# Input sketch
+input_path = "test_input.jpg"
 
 image = Image.open(input_path).convert("RGB")
-
-# The dataset image contains:
-# left  = input
-# right = target
-
-width, height = image.size
-
-input_image = image.crop(
-    (0, 0, width // 2, height)
-)
 
 
 # Transform input
@@ -50,11 +40,11 @@ transform = transforms.Compose([
     )
 ])
 
-input_tensor = transform(input_image)
+input_tensor = transform(image)
 input_tensor = input_tensor.unsqueeze(0).to(DEVICE)
 
 
-# Generate image
+# Generate realistic house
 with torch.no_grad():
     generated = generator(input_tensor)
 
@@ -65,6 +55,7 @@ generated = (generated + 1) / 2
 generated = generated.squeeze(0).cpu()
 
 generated_image = transforms.ToPILImage()(generated)
+
 
 # Save output
 output_path = "outputs/generated.png"

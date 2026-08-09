@@ -32,3 +32,9 @@ Thumbs.db
 # IDE
 .vscode/
 
+# Model files
+*.pth
+
+# Archives
+*.tar.gz
+

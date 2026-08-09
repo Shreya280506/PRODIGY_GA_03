@@ -13,8 +13,8 @@ from config import DEVICE, IMAGE_SIZE, GENERATOR_CHECKPOINT
 # --------------------------------
 
 st.set_page_config(
-    page_title="Pix2Pix Image Translator",
-    page_icon="🎨",
+    page_title="Sketch to Realistic House",
+    page_icon="🏠",
     layout="wide"
 )
 
@@ -61,29 +61,35 @@ def translate_image(generator, input_image):
     with torch.no_grad():
         generated = generator(image_tensor)
 
+    # Convert from [-1, 1] to [0, 1]
     generated = (generated + 1) / 2
+
     generated = generated.squeeze(0).cpu()
 
-    return transforms.ToPILImage()(generated)
+    generated_image = transforms.ToPILImage()(generated)
+
+    return generated_image
 
 
 # --------------------------------
 # Header
 # --------------------------------
 
-st.title("🎨 Pix2Pix Image Translator")
+st.title("🏠 Sketch → Realistic House")
 
 st.markdown(
     """
-    ### Image-to-Image Translation using Conditional GAN
+    ### Generate a realistic house from a sketch
 
-    Upload a **facade sketch/label image** and Pix2Pix will
-    generate a corresponding realistic facade image.
+    Upload a **house sketch or edge-style drawing**, and the trained
+    Pix2Pix model will generate a realistic house image.
     """
 )
 
 st.info(
-    "Model: Pix2Pix cGAN | Dataset: CMP Facades | "
+    f"Model: Pix2Pix cGAN | "
+    f"Training images: 500 | "
+    f"Image size: {IMAGE_SIZE}×{IMAGE_SIZE} | "
     f"Device: {DEVICE.upper()}"
 )
 
@@ -96,11 +102,11 @@ generator = load_model()
 
 
 # --------------------------------
-# Upload
+# Upload Image
 # --------------------------------
 
 uploaded_file = st.file_uploader(
-    "📤 Upload an input image",
+    "📤 Upload a house sketch",
     type=["jpg", "jpeg", "png"]
 )
 
@@ -111,20 +117,24 @@ if uploaded_file is not None:
         uploaded_file
     ).convert("RGB")
 
-    st.subheader("Input Image")
+    st.subheader("Input Sketch")
 
     st.image(
         input_image,
         width="stretch"
     )
 
+    # --------------------------------
+    # Generate
+    # --------------------------------
+
     if st.button(
-        "✨ Generate Translation",
+        "✨ Generate Realistic House",
         type="primary"
     ):
 
         with st.spinner(
-            "Generating translated image..."
+            "Generating realistic house..."
         ):
 
             generated_image = translate_image(
@@ -133,20 +143,20 @@ if uploaded_file is not None:
             )
 
         st.success(
-            "Image generated successfully!"
+            "Realistic house generated successfully!"
         )
 
         # --------------------------------
         # Results
         # --------------------------------
 
-        st.subheader("Translation Result")
+        st.subheader("Result")
 
         col1, col2 = st.columns(2)
 
         with col1:
 
-            st.markdown("### 📥 Input")
+            st.markdown("### ✏️ Input Sketch")
 
             st.image(
                 input_image,
@@ -155,7 +165,7 @@ if uploaded_file is not None:
 
         with col2:
 
-            st.markdown("### 🎨 Generated")
+            st.markdown("### 🏠 Generated House")
 
             st.image(
                 generated_image,
@@ -163,7 +173,7 @@ if uploaded_file is not None:
             )
 
         # --------------------------------
-        # Save
+        # Save Output
         # --------------------------------
 
         os.makedirs(
@@ -189,9 +199,9 @@ if uploaded_file is not None:
         ) as file:
 
             st.download_button(
-                label="⬇️ Download Generated Image",
+                label="⬇️ Download Generated House",
                 data=file,
-                file_name="pix2pix_generated.png",
+                file_name="realistic_house.png",
                 mime="image/png"
             )
 
@@ -202,15 +212,19 @@ if uploaded_file is not None:
 
 st.divider()
 
-st.subheader("ℹ️ About Pix2Pix")
+st.subheader("ℹ️ About the Project")
 
 st.write(
     """
-    Pix2Pix is a conditional Generative Adversarial Network
-    designed for paired image-to-image translation.
+    This project uses **Pix2Pix**, a conditional Generative
+    Adversarial Network (cGAN), for paired image-to-image translation.
 
-    The Generator uses a U-Net architecture to transform
-    the input image, while the PatchGAN Discriminator learns
-    to distinguish real target images from generated images.
+    The model was trained to learn the mapping:
+
+    **House Sketch → Realistic House**
+
+    The Generator uses a U-Net architecture to transform the
+    input sketch, while the PatchGAN Discriminator learns to
+    distinguish realistic target images from generated images.
     """
 )

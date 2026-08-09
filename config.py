@@ -10,7 +10,7 @@ CHANNELS = 3
 # Training settings
 BATCH_SIZE = 1
 LEARNING_RATE = 0.0002
-NUM_EPOCHS = 10
+NUM_EPOCHS = 30
 
 # Pix2Pix parameters
 BETA1 = 0.5

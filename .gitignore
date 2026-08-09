@@ -1,0 +1,34 @@
+# Virtual environment
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Generated outputs
+outputs/
+
+# Local test files
+test_input.jpg
+
+# Dataset
+dataset/
+facades/
+facades.tar.gz
+
+# Trained model checkpoints
+checkpoints/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+

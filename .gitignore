@@ -19,9 +19,6 @@ dataset/
 facades/
 facades.tar.gz
 
-# Trained model checkpoints
-checkpoints/
-
 # Logs
 *.log
 
@@ -31,9 +28,6 @@ Thumbs.db
 
 # IDE
 .vscode/
-
-# Model files
-*.pth
 
 # Archives
 *.tar.gz

@@ -1,230 +1,395 @@
 import os
-import torch
+import io
+
 import streamlit as st
+import torch
 from PIL import Image
 import torchvision.transforms as transforms
 
 from model import Generator
-from config import DEVICE, IMAGE_SIZE, GENERATOR_CHECKPOINT
 
 
-# --------------------------------
-# Page Configuration
-# --------------------------------
+# ============================================================
+# PAGE CONFIG
+# ============================================================
 
 st.set_page_config(
-    page_title="Sketch to Realistic House",
-    page_icon="🏠",
+    page_title="FacadeVision AI",
+    page_icon="🏢",
     layout="wide"
 )
 
 
-# --------------------------------
-# Load Model
-# --------------------------------
+# ============================================================
+# SETTINGS
+# ============================================================
+
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+
+IMAGE_SIZE = 256
+
+CHECKPOINT_PATH = (
+    "checkpoints_facades/generator.pth"
+)
+
+
+# ============================================================
+# CUSTOM CSS
+# ============================================================
+
+st.markdown(
+    """
+    <style>
+
+    .stApp {
+        background-color: #f4f1eb;
+    }
+
+    .main-title {
+        font-size: 52px;
+        font-weight: 700;
+        letter-spacing: -2px;
+        color: #111111;
+        margin-bottom: 5px;
+    }
+
+    .subtitle {
+        font-size: 17px;
+        color: #666666;
+        margin-bottom: 45px;
+    }
+
+    .section-label {
+        font-size: 13px;
+        letter-spacing: 1px;
+        color: #777777;
+        text-transform: uppercase;
+        margin-bottom: 8px;
+    }
+
+    .section-title {
+        font-size: 30px;
+        font-weight: 650;
+        color: #111111;
+        margin-bottom: 8px;
+    }
+
+    .description {
+        font-size: 15px;
+        color: #777777;
+        margin-bottom: 20px;
+    }
+
+    .result-title {
+        font-size: 30px;
+        font-weight: 650;
+        color: #111111;
+        margin-bottom: 8px;
+    }
+
+    .status-box {
+        padding: 14px 18px;
+        border: 1px solid #d7d2c9;
+        background-color: #ebe7df;
+        border-radius: 6px;
+        color: #555555;
+        margin-bottom: 20px;
+    }
+
+    div.stButton > button {
+        width: 100%;
+        border-radius: 5px;
+        height: 48px;
+        font-size: 14px;
+        font-weight: 600;
+        background-color: #111111;
+        color: white;
+        border: none;
+    }
+
+    div.stButton > button:hover {
+        background-color: #333333;
+        color: white;
+    }
+
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+
+# ============================================================
+# LOAD MODEL
+# ============================================================
 
 @st.cache_resource
-def load_model():
+def load_generator():
 
     generator = Generator().to(DEVICE)
 
-    generator.load_state_dict(
-        torch.load(
-            GENERATOR_CHECKPOINT,
-            map_location=DEVICE
-        )
+    checkpoint = torch.load(
+        CHECKPOINT_PATH,
+        map_location=DEVICE
     )
+
+    generator.load_state_dict(checkpoint)
 
     generator.eval()
 
     return generator
 
 
-# --------------------------------
-# Image Translation
-# --------------------------------
+# ============================================================
+# IMAGE TRANSFORM
+# ============================================================
 
-def translate_image(generator, input_image):
+transform = transforms.Compose([
+    transforms.Resize(
+        (IMAGE_SIZE, IMAGE_SIZE)
+    ),
+    transforms.ToTensor(),
+    transforms.Normalize(
+        (0.5, 0.5, 0.5),
+        (0.5, 0.5, 0.5)
+    )
+])
 
-    transform = transforms.Compose([
-        transforms.Resize((IMAGE_SIZE, IMAGE_SIZE)),
-        transforms.ToTensor(),
-        transforms.Normalize(
-            (0.5, 0.5, 0.5),
-            (0.5, 0.5, 0.5)
-        )
-    ])
 
-    image_tensor = transform(input_image)
-    image_tensor = image_tensor.unsqueeze(0).to(DEVICE)
+# ============================================================
+# GENERATION FUNCTION
+# ============================================================
+
+def generate_building(
+    generator,
+    image
+):
+
+    image = image.convert("RGB")
+
+    input_tensor = transform(image)
+
+    input_tensor = (
+        input_tensor
+        .unsqueeze(0)
+        .to(DEVICE)
+    )
 
     with torch.no_grad():
-        generated = generator(image_tensor)
 
-    # Convert from [-1, 1] to [0, 1]
-    generated = (generated + 1) / 2
+        generated = generator(
+            input_tensor
+        )
 
-    generated = generated.squeeze(0).cpu()
+    generated = (
+        generated + 1
+    ) / 2
 
-    generated_image = transforms.ToPILImage()(generated)
+    generated = generated.clamp(
+        0,
+        1
+    )
 
-    return generated_image
+    generated = (
+        generated
+        .squeeze(0)
+        .cpu()
+    )
+
+    output = transforms.ToPILImage()(
+        generated
+    )
+
+    return output
 
 
-# --------------------------------
-# Header
-# --------------------------------
+# ============================================================
+# HEADER
+# ============================================================
 
-st.title("🏠 Sketch → Realistic House")
+st.markdown(
+    '<div class="main-title">FacadeVision AI</div>',
+    unsafe_allow_html=True
+)
 
 st.markdown(
     """
-    ### Generate a realistic house from a sketch
-
-    Upload a **house sketch or edge-style drawing**, and the trained
-    Pix2Pix model will generate a realistic house image.
-    """
-)
-
-st.info(
-    f"Model: Pix2Pix cGAN | "
-    f"Training images: 500 | "
-    f"Image size: {IMAGE_SIZE}×{IMAGE_SIZE} | "
-    f"Device: {DEVICE.upper()}"
+    <div class="subtitle">
+        Transform a semantic building layout into a realistic
+        architectural façade using Pix2Pix.
+    </div>
+    """,
+    unsafe_allow_html=True
 )
 
 
-# --------------------------------
-# Load Generator
-# --------------------------------
+# ============================================================
+# MAIN COLUMNS
+# ============================================================
 
-generator = load_model()
-
-
-# --------------------------------
-# Upload Image
-# --------------------------------
-
-uploaded_file = st.file_uploader(
-    "📤 Upload a house sketch",
-    type=["jpg", "jpeg", "png"]
+left_column, right_column = st.columns(
+    2,
+    gap="large"
 )
 
+
+# ============================================================
+# LEFT — INPUT
+# ============================================================
+
+with left_column:
+
+    st.markdown(
+        '<div class="section-label">01 / INPUT</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        '<div class="section-title">Semantic Facade</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        """
+        <div class="description">
+            Upload a semantic / label representation of a building.
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    uploaded_file = st.file_uploader(
+        "Upload your semantic facade",
+        type=["jpg", "jpeg", "png"],
+        label_visibility="visible"
+    )
+
+    input_image = None
+
+    if uploaded_file is not None:
+
+        input_image = Image.open(
+            io.BytesIO(
+                uploaded_file.getvalue()
+            )
+        ).convert("RGB")
+
+        st.markdown(
+            '<div class="section-label">INPUT PREVIEW · 256 × 256</div>',
+            unsafe_allow_html=True
+        )
+
+        st.image(
+            input_image,
+            width=256
+        )
+
+
+# ============================================================
+# RIGHT — OUTPUT
+# ============================================================
+
+with right_column:
+
+    st.markdown(
+        '<div class="section-label">02 / OUTPUT</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        '<div class="result-title">Realistic Building</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        """
+        <div class="description">
+            Generated architectural visualization.
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    if (
+        "generated_image"
+        in st.session_state
+    ):
+
+        st.markdown(
+            '<div class="section-label">OUTPUT PREVIEW · 256 × 256</div>',
+            unsafe_allow_html=True
+        )
+
+        st.image(
+            st.session_state.generated_image,
+            width=256
+        )
+
+    else:
+
+        st.markdown(
+            """
+            <div class="status-box">
+                Upload a semantic facade and click
+                <b>GENERATE REALISTIC BUILDING</b>.
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+
+# ============================================================
+# GENERATE BUTTON
+# ============================================================
+
+st.write("")
 
 if uploaded_file is not None:
 
-    input_image = Image.open(
-        uploaded_file
-    ).convert("RGB")
-
-    st.subheader("Input Sketch")
-
-    st.image(
-        input_image,
-        width="stretch"
-    )
-
-    # --------------------------------
-    # Generate
-    # --------------------------------
-
     if st.button(
-        "✨ Generate Realistic House",
-        type="primary"
+        "GENERATE REALISTIC BUILDING"
     ):
 
-        with st.spinner(
-            "Generating realistic house..."
-        ):
+        try:
 
-            generated_image = translate_image(
-                generator,
-                input_image
-            )
+            with st.spinner(
+                "Generating realistic building..."
+            ):
 
-        st.success(
-            "Realistic house generated successfully!"
-        )
+                generator = load_generator()
 
-        # --------------------------------
-        # Results
-        # --------------------------------
+                result = generate_building(
+                    generator,
+                    input_image
+                )
 
-        st.subheader("Result")
+                st.session_state.generated_image = result
 
-        col1, col2 = st.columns(2)
+            st.rerun()
 
-        with col1:
+        except Exception as e:
 
-            st.markdown("### ✏️ Input Sketch")
-
-            st.image(
-                input_image,
-                width="stretch"
-            )
-
-        with col2:
-
-            st.markdown("### 🏠 Generated House")
-
-            st.image(
-                generated_image,
-                width="stretch"
-            )
-
-        # --------------------------------
-        # Save Output
-        # --------------------------------
-
-        os.makedirs(
-            "outputs",
-            exist_ok=True
-        )
-
-        output_path = (
-            "outputs/streamlit_output.png"
-        )
-
-        generated_image.save(
-            output_path
-        )
-
-        # --------------------------------
-        # Download
-        # --------------------------------
-
-        with open(
-            output_path,
-            "rb"
-        ) as file:
-
-            st.download_button(
-                label="⬇️ Download Generated House",
-                data=file,
-                file_name="realistic_house.png",
-                mime="image/png"
+            st.error(
+                f"Generation failed: {e}"
             )
 
 
-# --------------------------------
-# About
-# --------------------------------
+# ============================================================
+# FOOTER
+# ============================================================
 
-st.divider()
+st.write("")
 
-st.subheader("ℹ️ About the Project")
-
-st.write(
+st.markdown(
     """
-    This project uses **Pix2Pix**, a conditional Generative
-    Adversarial Network (cGAN), for paired image-to-image translation.
-
-    The model was trained to learn the mapping:
-
-    **House Sketch → Realistic House**
-
-    The Generator uses a U-Net architecture to transform the
-    input sketch, while the PatchGAN Discriminator learns to
-    distinguish realistic target images from generated images.
-    """
+    <div style="
+        margin-top:50px;
+        padding-top:20px;
+        border-top:1px solid #d7d2c9;
+        color:#777777;
+        font-size:13px;
+    ">
+        Pix2Pix Conditional GAN · U-Net Generator · PatchGAN Discriminator
+    </div>
+    """,
+    unsafe_allow_html=True
 )

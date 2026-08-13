@@ -1,32 +1,26 @@
-# PRODIGY_GA_03
-# 🏠 Sketch to Realistic House using Pix2Pix
+# 🏛️ FacadeVision AI
 
-A deep learning project that uses **Pix2Pix (Conditional GAN)** to transform a house sketch into a realistic house image.
+## AI-Based Architectural Facade Visualization using Pix2Pix
 
-## 🚀 Project Demo
+FacadeVision AI is a deep learning-based image-to-image translation system that uses **Pix2Pix GAN** to transform a **semantic architectural facade representation** into a **realistic-looking building facade concept**.
 
-Upload a house sketch through the Streamlit web application and generate a realistic house image using the trained Pix2Pix model.
+The project demonstrates how conditional Generative Adversarial Networks (cGANs) can be used for architectural visualization by learning the relationship between structural facade layouts and their corresponding building images.
 
-## ✨ Features
+---
 
-- ✏️ Sketch-to-image translation
-- 🏠 Generates realistic house exteriors
-- 🤖 Pix2Pix Conditional GAN
-- 🎨 U-Net Generator
-- 🔍 PatchGAN Discriminator
-- ⚡ CUDA/GPU acceleration when available
-- 🌐 Streamlit web interface
-- ⬇️ Download generated images
+## ✨ Project Overview
 
-## 🧠 How It Works
+Architectural visualization often requires converting structural or semantic representations into visually realistic concepts.
+
+FacadeVision AI addresses this problem using **Pix2Pix**, a conditional GAN architecture designed for paired image-to-image translation.
+
+The current system follows this pipeline:
 
 ```text
-House Photograph
-       ↓
-Edge / Sketch Generation
-       ↓
-Paired Training Dataset
-       ↓
-Pix2Pix
-       ↓
-Generated Realistic House
+Semantic Facade
+       │
+       ▼
+   Pix2Pix GAN
+       │
+       ▼
+Realistic Building Facade

@@ -14,7 +14,7 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 IMAGE_SIZE = 256
 
-CHECKPOINT = "checkpoints_facades/generator.pth"
+CHECKPOINT = "checkpoints/generator.pth"
 
 INPUT_IMAGE = "facades_right.jpg"
 

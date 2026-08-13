@@ -24,7 +24,7 @@ from model import Generator, Discriminator
 # ============================================================
 
 DATASET_DIR = "facades/train"
-CHECKPOINT_DIR = "checkpoints_facades"
+CHECKPOINT_DIR = "checkpoints"
 
 os.makedirs(CHECKPOINT_DIR, exist_ok=True)
 

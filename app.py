@@ -29,7 +29,7 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 IMAGE_SIZE = 256
 
 CHECKPOINT_PATH = (
-    "checkpoints_facades/generator.pth"
+    "checkpoints/generator.pth"
 )
 
 
